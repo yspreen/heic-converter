@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:heic}",
+            "name": "Debug heic",
+            "program": "${workspaceFolder:heic}/.build/debug/heic",
+            "preLaunchTask": "swift: Build Debug heic"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:heic}",
+            "name": "Release heic",
+            "program": "${workspaceFolder:heic}/.build/release/heic",
+            "preLaunchTask": "swift: Build Release heic"
+        }
+    ]
+}
