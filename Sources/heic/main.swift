@@ -1,9 +1,10 @@
-import Foundation
 import AppKit
+import Foundation
 
 class heic {
 	let fileManager = FileManager.default
-	let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+	let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)
+		.first!
 
 	func run() {
 		verifyLaunchLocation()
@@ -38,7 +39,8 @@ class heic {
 		let launchAgentsDir = fileManager.homeDirectoryForCurrentUser
 			.appendingPathComponent("Library/LaunchAgents")
 
-		let plistDest = launchAgentsDir
+		let plistDest =
+			launchAgentsDir
 			.appendingPathComponent("co.spreen.heic.plist")
 
 		guard !fileManager.fileExists(atPath: plistDest.path) else { return }
@@ -70,8 +72,9 @@ class heic {
 
 	private func monitorDownloads() {
 		do {
-			let files = try fileManager.contentsOfDirectory(at: downloadsURL,
-																											includingPropertiesForKeys: nil)
+			let files = try fileManager.contentsOfDirectory(
+				at: downloadsURL,
+				includingPropertiesForKeys: nil)
 			print("Current downloads: \(files.map { $0.lastPathComponent })")
 		} catch {
 			print("Download monitoring error: \(error)")
