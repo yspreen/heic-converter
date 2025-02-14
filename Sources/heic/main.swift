@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import ImageIO
 
 class heic {
 	let fileManager = FileManager.default
@@ -63,11 +64,58 @@ class heic {
 	private func startMainLoop() {
 		// Replace with your actual functionality
 		self.monitorDownloads()
-		Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+		Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
 			self.monitorDownloads()
 		}
 
 		RunLoop.current.run()
+	}
+
+	private func hasJPGVersion(for heicURL: URL) -> Bool {
+		let jpgPath = heicURL.deletingPathExtension().appendingPathExtension("jpg").path
+		return fileManager.fileExists(atPath: jpgPath)
+	}
+
+	private func convertHEICtoJPG(at sourceURL: URL) {
+		guard let imageSource = CGImageSourceCreateWithURL(sourceURL as CFURL, nil) else {
+			print("Failed to create image source")
+			return
+		}
+
+		guard let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil),
+			let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil)
+				as? [String: Any],
+			let orientationNumber = properties[kCGImagePropertyOrientation as String] as? UInt32
+		else {
+			print("Failed to read HEIC file: \(sourceURL.lastPathComponent)")
+			return
+		}
+
+		let destination = sourceURL.deletingPathExtension().appendingPathExtension("jpg")
+		let destData = NSMutableData()
+		guard
+			let imageDestination = CGImageDestinationCreateWithData(
+				destData,
+				"public.jpeg" as CFString,
+				1,
+				nil
+			)
+		else {
+			print("Failed to create image destination")
+			return
+		}
+
+		let options: [CFString: Any] = [
+			kCGImageDestinationLossyCompressionQuality: 0.85,
+			kCGImagePropertyOrientation: orientationNumber,
+		]
+
+		CGImageDestinationAddImage(imageDestination, image, options as CFDictionary)
+
+		if CGImageDestinationFinalize(imageDestination) {
+			try? destData.write(to: destination, options: .atomic)
+			print("Converted: \(sourceURL.lastPathComponent) → \(destination.lastPathComponent)")
+		}
 	}
 
 	private func monitorDownloads() {
@@ -75,7 +123,17 @@ class heic {
 			let files = try fileManager.contentsOfDirectory(
 				at: downloadsURL,
 				includingPropertiesForKeys: nil)
-			print("Current downloads: \(files.map { $0.lastPathComponent })")
+
+			let heicFiles = files.filter { url in
+				let ext = url.pathExtension.lowercased()
+				return ext == "heic"
+			}
+
+			for heicURL in heicFiles {
+				if !hasJPGVersion(for: heicURL) {
+					convertHEICtoJPG(at: heicURL)
+				}
+			}
 		} catch {
 			print("Download monitoring error: \(error)")
 		}
