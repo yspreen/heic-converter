@@ -7,4 +7,4 @@ cp .build/release/heic /Applications/heic.app/Contents/MacOS/
 # Launch the agent
 /Applications/heic.app/Contents/MacOS/heic >/dev/null 2>&1 &
 
-echo Done.
+echo Done. Uninstall by deleting \`/Applications/heic.app\`
