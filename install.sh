@@ -1,5 +1,6 @@
 swift build -c release
 
+ps | grep /Applications/heic.app | grep -v grep | grep -Eo '^[0-9]+' | while read pid; do kill $pid; done
 rm -rf /Applications/heic.app
 
 # Create app bundle structure
