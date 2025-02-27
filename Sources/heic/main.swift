@@ -83,7 +83,9 @@ class heic {
 			self.monitorDownloads()
 		}
 
-		RunLoop.current.run()
+		while true {
+			RunLoop.current.run()
+		}
 	}
 
 	private func hasJPGVersion(for heicURL: URL) -> Bool {
@@ -133,14 +135,44 @@ class heic {
 		}
 	}
 
+	private func getDateAdded(forFileAt path: String) -> Date? {
+		let path = path.replacingOccurrences(of: "file://", with: "")
+		guard let mdItem = MDItemCreate(nil, path as CFString) else {
+			print("Could not create MDItem", path)
+			return nil
+		}
+
+		// Get the date added attribute
+		let attribute = MDItemCopyAttribute(mdItem, kMDItemDateAdded)
+
+		// Convert to Date and return
+		return attribute as? Date
+	}
+
 	private func isFileNewerThanReference(fileURL: URL) -> Bool {
 		do {
 			let fileAttributes = try fileManager.attributesOfItem(atPath: fileURL.path)
-			guard let fileDate = fileAttributes[.modificationDate] as? Date else {
-				return false
+			if
+				let fileDate = fileAttributes[.creationDate] as? Date,
+				fileDate >= referenceDate
+			{
+				return true
+			}
+			if
+				let fileDate = fileAttributes[.modificationDate] as? Date,
+				fileDate >= referenceDate
+			{
+				return true
+			}
+			if
+				let fileDate = getDateAdded(forFileAt: fileURL.absoluteString),
+				fileDate >= referenceDate
+			{
+				return true
 			}
 
-			return fileDate > referenceDate
+
+			return false
 		} catch {
 			print("Error getting file date: \(error)")
 			return false
