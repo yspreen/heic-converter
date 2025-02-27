@@ -6,6 +6,21 @@ class heic {
 	let fileManager = FileManager.default
 	let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)
 		.first!
+	let appExecutablePath = URL(fileURLWithPath: "/Applications/heic.app/Contents/MacOS/heic")
+	let referenceDate: Date
+
+	init() {
+		// Get the modification date of the app executable once during initialization
+		if let attributes = try? fileManager.attributesOfItem(atPath: appExecutablePath.path),
+			let modDate = attributes[.modificationDate] as? Date
+		{
+			referenceDate = modDate
+		} else {
+			// If we can't get the date for some reason, use current time as fallback
+			referenceDate = Date()
+			print("Warning: Couldn't get app modification date, using current time instead")
+		}
+	}
 
 	func run() {
 		verifyLaunchLocation()
@@ -118,6 +133,20 @@ class heic {
 		}
 	}
 
+	private func isFileNewerThanReference(fileURL: URL) -> Bool {
+		do {
+			let fileAttributes = try fileManager.attributesOfItem(atPath: fileURL.path)
+			guard let fileDate = fileAttributes[.modificationDate] as? Date else {
+				return false
+			}
+
+			return fileDate > referenceDate
+		} catch {
+			print("Error getting file date: \(error)")
+			return false
+		}
+	}
+
 	private func monitorDownloads() {
 		do {
 			let files = try fileManager.contentsOfDirectory(
@@ -130,7 +159,7 @@ class heic {
 			}
 
 			for heicURL in heicFiles {
-				if !hasJPGVersion(for: heicURL) {
+				if !hasJPGVersion(for: heicURL) && isFileNewerThanReference(fileURL: heicURL) {
 					convertHEICtoJPG(at: heicURL)
 				}
 			}
