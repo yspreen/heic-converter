@@ -10,6 +10,6 @@ cp -r .build/release/heic_heic.bundle /Applications/heic.app/heic_heic.bundle
 
 # Launch the agent
 ps -A | grep /Applications/heic.app | grep -v grep | grep -Eo '^[0-9]+' | while read pid; do kill $pid; done
-/Applications/heic.app/Contents/MacOS/heic &
+/Applications/heic.app/Contents/MacOS/heic >/dev/null 2>&1 &
 
 echo Done. Uninstall by deleting \`/Applications/heic.app\`
