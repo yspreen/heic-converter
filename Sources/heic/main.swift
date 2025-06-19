@@ -88,14 +88,34 @@ class heic {
 		}
 	}
 
-	private func hasJPGVersion(for heicURL: URL) -> Bool {
-		let jpgPath = heicURL.deletingPathExtension().appendingPathExtension("jpg").path
+	private func isWebPSupported() -> Bool {
+		let supportedTypes = CGImageSourceCopyTypeIdentifiers()
+		for i in 0..<CFArrayGetCount(supportedTypes) {
+			let typeID = CFArrayGetValueAtIndex(supportedTypes, i)
+			let typeString = Unmanaged<CFString>.fromOpaque(typeID!).takeUnretainedValue() as String
+			if typeString.contains("webp") {
+				return true
+			}
+		}
+		return false
+	}
+
+	private func hasJPGVersion(for sourceURL: URL) -> Bool {
+		let jpgPath = sourceURL.deletingPathExtension().appendingPathExtension("jpg").path
 		return fileManager.fileExists(atPath: jpgPath)
 	}
 
-	private func convertHEICtoJPG(at sourceURL: URL) {
+	private func convertToJPG(at sourceURL: URL) {
+		let fileExtension = sourceURL.pathExtension.lowercased()
+		
+		// Check if WebP is supported by the system for WebP files
+		if fileExtension == "webp" && !isWebPSupported() {
+			print("WebP format not supported on this macOS version (requires macOS 11+)")
+			return
+		}
+		
 		guard let imageSource = CGImageSourceCreateWithURL(sourceURL as CFURL, nil) else {
-			print("Failed to create image source")
+			print("Failed to create image source for: \(sourceURL.lastPathComponent)")
 			return
 		}
 
@@ -104,7 +124,7 @@ class heic {
 				as? [String: Any],
 			let orientationNumber = properties[kCGImagePropertyOrientation as String] as? UInt32
 		else {
-			print("Failed to read HEIC file: \(sourceURL.lastPathComponent)")
+			print("Failed to read image file: \(sourceURL.lastPathComponent)")
 			return
 		}
 
@@ -185,14 +205,20 @@ class heic {
 				at: downloadsURL,
 				includingPropertiesForKeys: nil)
 
-			let heicFiles = files.filter { url in
+			let supportedFiles = files.filter { url in
 				let ext = url.pathExtension.lowercased()
-				return ext == "heic"
+				if ext == "heic" {
+					return true
+				}
+				if ext == "webp" {
+					return isWebPSupported()
+				}
+				return false
 			}
 
-			for heicURL in heicFiles {
-				if !hasJPGVersion(for: heicURL) && isFileNewerThanReference(fileURL: heicURL) {
-					convertHEICtoJPG(at: heicURL)
+			for fileURL in supportedFiles {
+				if !hasJPGVersion(for: fileURL) && isFileNewerThanReference(fileURL: fileURL) {
+					convertToJPG(at: fileURL)
 				}
 			}
 		} catch {
