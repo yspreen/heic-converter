@@ -93,7 +93,7 @@ class heic {
 		for i in 0..<CFArrayGetCount(supportedTypes) {
 			let typeID = CFArrayGetValueAtIndex(supportedTypes, i)
 			let typeString = Unmanaged<CFString>.fromOpaque(typeID!).takeUnretainedValue() as String
-			if typeString.contains("webp") {
+			if typeString == "org.webmproject.webp" {
 				return true
 			}
 		}
@@ -119,14 +119,14 @@ class heic {
 			return
 		}
 
-		guard let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil),
-			let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil)
-				as? [String: Any],
-			let orientationNumber = properties[kCGImagePropertyOrientation as String] as? UInt32
-		else {
+		guard let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
 			print("Failed to read image file: \(sourceURL.lastPathComponent)")
 			return
 		}
+
+		// Get properties and orientation (with fallback to default)
+		let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [String: Any]
+		let orientationNumber = properties?[kCGImagePropertyOrientation as String] as? UInt32 ?? 1
 
 		let destination = sourceURL.deletingPathExtension().appendingPathExtension("jpg")
 		let destData = NSMutableData()
