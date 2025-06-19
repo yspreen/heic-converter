@@ -6,6 +6,7 @@ set -e
 
 cd /tmp
 
+[ -d heic-converter ] && rm -rf heic-converter
 git clone https://github.com/yspreen/heic-converter.git
 cd heic-converter
 chmod +x install.sh
